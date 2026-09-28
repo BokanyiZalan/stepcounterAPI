@@ -4,6 +4,8 @@ const sha1 = require('sha1')
 var cors= require('cors')
 const app = express()
 const port = 3000
+const pwdRegExp=/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/
+
 
 var pool = mysql.createPool({
   connectionLimit: 10,
@@ -40,6 +42,12 @@ app.post('/users/register', (req, res) => {
     }
     
     // implement password strength check
+    if(!password.match(pwdRegExp)){
+      return res.status(400).json({ error: 'The new password is too weak' })
+    }
+
+
+
     //check if email already exists
     pool.query('SELECT * FROM users WHERE email = ?', [email], (error, results) => {
         if (error) {
@@ -110,6 +118,10 @@ app.post('/users/:uid/passmod', (req, res) => {
     return res.status(400).json({ error: 'New password must be different from old password' })
   }
   // new password strength check
+if(!newpass.match(pwdRegExp)){
+      return res.status(400).json({ error: 'The new password is too weak' })
+    }
+
   pool.query('SELECT password FROM users WHERE ID=?', [uid], (error, results) => {
     console.log(results)
     if (error) {
