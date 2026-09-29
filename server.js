@@ -426,7 +426,7 @@ app.post('/admin/statistics',(req,res)=>{
               return res.status(500).json({ error: 'Database query error' })
               }
               console.log(results)
-              return res.status(200).json({ results })
+              return res.status(200).json(results )
 
        })
   })
