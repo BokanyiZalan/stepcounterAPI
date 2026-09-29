@@ -1,20 +1,22 @@
+require('dotenv').config()
 const express =require('express')
 const mysql = require('mysql')
 const sha1 = require('sha1')
 var cors= require('cors')
 const app = express()
-const port = 3000
+const port = process.env.APP_PORT
 const pwdRegExp=/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/
 
 
 var pool = mysql.createPool({
-  connectionLimit: 10,
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  port: 3307,
-  database: 'stepcounter',
-  timezone:'Europe/Budapest'
+  connectionLimit:      process.env.DB_CONN_LIMIT,
+  multipleStatements:   process.env.DB_MULTI_QUERY,
+  host:                 process.env.DB_HOST,
+  user:                 process.env.DB_USER,
+  password:             process.env.DB_PASS,
+  port:                 process.env.DB_PORT,
+  database:             process.env.DB_NAME,
+  timezone:             process.env.DB_TIMEZONE
 
 
 })
@@ -390,6 +392,46 @@ pool.query('SELECT * FROM users WHERE ID=?',[luid],(error,results)=>{
 })
 })
 //statistics
+app.post('/admin/statistics',(req,res)=>{
+  const luid=req.body.luid
+  if(!luid){
+    return res.status(400).json({ error: 'Cant get others users steps.' })
+  }
+  pool.query('SELECT * FROM users WHERE ID=?',[luid] ,(error,results)=>{
+    if (error){
+      return res.status(500).json({ error: 'Database query error' })
+    }
+    if(results.length==0){
+      return res.status(400).json({ error: 'user with this id doesnt exist' })
+    }
+    if(results[0].role != 'admin'){
+        return res.status(403).json({ error: 'you dont have premission' })
+    }
+    pool.query(
+      `SELECT 
+      COALESCE(SUM(step_count), 0) AS total, 
+      COALESCE(AVG(step_count), 0) AS avg 
+      FROM steps ;
+        SELECT 
+          users.name,
+          users.email,
+          COALESCE(SUM(steps.step_count),0) AS steps
+        FROM users
+        INNER JOIN steps ON users.ID = steps.user_id
+        GROUP BY users.ID, users.name, users.email
+        ORDER BY steps DESC
+        LIMIT 0,3
+       `,(error,results) => {
+            if (error){
+              return res.status(500).json({ error: 'Database query error' })
+              }
+              console.log(results)
+              return res.status(200).json({ results })
+
+       })
+  })
+})
+
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`)
