@@ -254,43 +254,43 @@ app.delete('/users/:uid', (req, res) => {
 
 
 //create step
-app.post('/steps/:uid',(req,res)=>{
-  const {luid,newstep,date}=req.body
+app.post('/steps',(req,res)=>{
+    const luid = req.body.luid
+    const {step_count, date} = req.body
+    let today = new Date()
  
-  let today=new Date()
-  
-  if(!luid|| !newstep|| !date){
-      return res.status(400).json({ error: 'All fields are required' })
-  }
-   if(newstep<0){
-       return res.status(400).json({ error: 'Invalid stepcount.' })
+    if(!luid || !step_count || !date){
+        return res.status(400).json({ message: 'All fields are required' });
     }
-   if(new Date(date)>today){
-    return res.status(400).json({ error: 'Cant add future date.' })
-   }
-
-   pool.query('SELECT * FROM steps WHERE user_id = ? AND date=?', [luid,date], (error, results) => {
-    console.log(results)
-    if(error){
-       return res.status(500).json({ error: 'Database query error.' })
+    if(step_count<0){
+        return res.status(400).json({message: 'steps cant be nagative'})
     }
-    if(results.length!=0){
-      return res.status(500).json({ error: 'Date already exists' })
+    if(new Date(date)>today){
+        return res.status(400).json({message: 'cant registed steps for the future'})
     }
-    
-      
-    pool.query('INSERT INTO steps (user_id,step_count,date) VALUES (?, ?, ?)',[luid,newstep,date] ,(error,results)=>{
-       if (error) {
-                return res.status(500).json({ error: 'Internal server error' })
-            }
-        if(results.affectedRows==0){
-          return res.status(200).json({ message: 'No change added' })
+    pool.query('SELECT * FROM users WHERE ID=?',[luid],(error,result1)=>{
+        if (error){
+            return res.status(500).json({ error: 'Database query error', error });
         }
-            return res.status(200).json({ message: 'Steps added.' })
-        })
+        if (result1.length == 0) {
+            return res.status(400).json({ message: 'this user doesnt exist' });
+        }
+        pool.query('SELECT * FROM steps WHERE user_id=? AND date=?',[luid,date], (error,result2)=>{
+        if (error){
+            return res.status(500).json({ message: 'Database query error', error });
+        }
+        if (result2.length > 0) {
+            return res.status(400).json({ message: 'you have already registered a step count for this date' });
+        }
+        pool.query('INSERT INTO steps (user_id,step_count,date) VALUES (?, ?, ?)', [luid, step_count, date], (error, results3) => {
+            if(error) {
+                return res.status(500).json({ message: 'Database error', error });
+            }
+            return res.status(200).json({ message: 'Step registered successfully' });
+        });    
     })
-    
-   })
+    })
+})
    
     
     
@@ -299,32 +299,98 @@ app.post('/steps/:uid',(req,res)=>{
 
 
 //get step
-app.post('/steps/:uid',(req,res)=>{
-  const luid=req.body.luid
-  const uid=req.params.uid
-  if(luid!=uid){
-    return res.status(400).json({ error: 'Cant get others users steps.' })
-  }
-
-  pool.query('SELECT * FROM steps WHERE user_id = ?',[luid] ,(error,results)=>{
-     if (error) {
-      return res.status(500).json({ error: 'Database query error' })
+app.get('/steps/:uid',(req,res)=>{
+    const uid = req.params.uid
+ 
+    if(!uid){
+        return res.status(400).json({error: 'missing user identifier'})
     }
-    if (results.length == 0) {
-      console.log(results)
-      return res.status(404).json({ error: 'No steps avaliable' })
-    }
-     return res.status(200).json({ results: results })
-  })
+ 
+    pool.query('SELECT * FROM steps WHERE user_id=? ' , [uid], (error, result) =>{
+        if (error) {
+            return res.status(500).json({ error: 'Database query error', });
+        }
+        if (result.length == 0){
+            return res.status(400).json({error: 'You dont have registerd steps'})
+        }
+        return res.status(200).json(result)
+    })
+ 
 })
-//update step
+ 
+// steps update
 app.patch('/steps/:stepID',(req,res)=>{
-  
+    const stepID = req.params.stepID
+    const {step_count} = req.body
+ 
+    if (!step_count ){
+        return res.status(400).json({ error: "missing required fields"})
+    }
+    if(step_count<0){
+        return res.status(400).json({message: 'steps cant be nagative'})
+    }
+    pool.query('SELECT * FROM steps WHERE ID=?',[stepID],(error,results)=>{
+        if(error){
+            return res.status(500).json({ error: 'Database update error', });
+        }
+        if (results.length ==0){
+            return res.status(400).json({error: 'this step doesnt exist'})
+        }
+        pool.query("update steps set step_count=?, updated_at=CURRENT_TIMESTAMP where ID=?", [step_count,stepID], (error,results3)=>{
+            if(error){
+                return res.status(500).json({ error: 'Database update error', });
+            }
+            return res.status(200).json({message:' step upodated succesfuly'})
+        })
+ 
+    })
 })
-//delete step
-app.delete('/steps/:stepID',(req,res)=>{
-  const luid=req.body.luid
+ 
+// delete step
+app.delete('/steps/:stepID', (req, res) => {
+
+    const stepID = req.params.stepID
+    const luid = req.body.luid
+
+    if (!stepID) {
+        return res.status(400).json({
+            error: 'missing step identifier'
+        })
+    }
+
+    if (!luid) {
+        return res.status(400).json({
+            error: 'missing user identification'
+        })
+    }
+
+    pool.query(
+        'DELETE FROM steps WHERE ID=? AND user_id=?',
+        [stepID, luid],
+        (error, results) => {
+
+            if (error) {
+                console.log(error)
+
+                return res.status(500).json({
+                    error: 'database query error'
+                })
+            }
+
+            if (results.affectedRows === 1) {
+                return res.status(200).json({
+                    message: 'step deleted successfully'
+                })
+            }
+
+            return res.status(404).json({
+                error: 'step not found or does not belong to this user'
+            })
+        }
+    )
 })
+
+/* }) */
 
 //admin endpoint
 
@@ -359,7 +425,7 @@ app.post('/admin/users', (req, res) => {
 
 //deny user
 app.patch('/admin/status',(req,res)=>{
-  const {uid,luid}=req.body;
+  const {uid,luid}=req.body
   if(!uid||!luid){
     return res.status(400).json({ error: 'Missing required fields' })
   }
@@ -375,22 +441,30 @@ pool.query('SELECT * FROM users WHERE ID=?',[luid],(error,results)=>{
     }
 
 
-  pool.query('SELECT * FROM users WHERE ID=?')[uid], (error, results) =>{
-    if (error){
+  pool.query('SELECT * FROM users WHERE ID=?',[uid], (error1, results1) =>{
+    if (error1){
       return res.status(500).json({ error:'Database query error' })
     }
-    if(results.length==0){
+    if(results1.length==0){
       return res.status(400).json({ error: 'No user with this ID' })
     }
-     pool.query('UPDATE users SET is_active=not is_active WHERE ID=?')[uid], (error, results2) =>{
-      if(error){
+     pool.query('UPDATE users SET is_active = not is_active WHERE ID=?', [uid], (error2, results2) =>{
+      if(error2){
         return res.status(500).json({ error:'Database query error' })
       }
-      return res.status(200).json({ message: 'User status changed!' })
-     }
-  }
+      if(results2.affectedRows==1){
+           return res.status(200).json({ message: 'User status changed!' })
+      }
+      else{
+        return res.status(400).json({ error: 'No rows affected' })
+    }
+      
+     
+     })
+  })
+  })
 })
-})
+
 //statistics
 app.post('/admin/statistics',(req,res)=>{
   const luid=req.body.luid
