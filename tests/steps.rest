@@ -1,0 +1,11 @@
+###create step
+
+POST http://localhost:3000/steps
+Content-Type: application/json
+
+{
+    "luid":9,
+    "step_count":5425235,
+    "date":"2026-11-09"
+
+}

@@ -182,6 +182,7 @@ app.get('/users/:uid', (req, res) => {
     res.status(200).json({ results: user })
   })
 })
+
 //update profile(name,email)
 app.patch('/users/:uid', (req, res)=>{
     const uid=req.params.uid

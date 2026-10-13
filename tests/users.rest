@@ -1,0 +1,59 @@
+###registration
+
+POST http://localhost:3000/users/register
+Content-Type: application/json
+
+{
+    "name": "GaborBarate",
+    "password": "gb123456?",
+    "email":"aliabdulaziz@gmail.com",
+    "confirm":"gb123456?"
+
+    
+}
+
+### login
+
+POST http://localhost:3000/users/login
+Content-Type: application/json
+
+{
+    
+    "email":"aliabdulaziz@gmail.com",
+    "password": "gb123456?"
+  
+}
+
+### pw change
+
+POST http://localhost:3000/users/9/passmod
+Content-Type: application/json
+
+{
+    "oldpass":"gb123456?",
+    "newpass":"gb123456??",
+    "confirm":"gb123456??"
+}
+
+### get profile
+GET http://localhost:3000/users/9
+Content-Type: application/json
+
+### update profile(name,email)
+PATCH http://localhost:3000/users/9
+Content-Type: application/json
+
+{
+    "username":"GaborBarate",
+    "email":"aliabdulaziz@gmail.com",
+    "luid":9
+} 
+
+###DELETE
+
+DELETE http://localhost:3000/users/9
+Content-Type: application/json
+
+{
+    "luid":9
+}
