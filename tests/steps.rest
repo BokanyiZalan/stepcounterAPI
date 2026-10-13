@@ -9,3 +9,26 @@ Content-Type: application/json
     "date":"2026-11-09"
 
 }
+
+###get step
+
+GET http://localhost:3000/steps/9
+Content-Type: application/json
+
+###update step
+
+PATCH http://localhost:3000/steps/9
+Content-Type: application/json
+
+{
+    "step_count":523352
+}
+
+### delete step
+
+DELETE http://localhost:3000/steps/9
+Content-Type: application/json
+
+{
+    "luid":9
+}
