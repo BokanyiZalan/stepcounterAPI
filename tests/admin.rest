@@ -1,0 +1,27 @@
+### get all users
+
+POST http://localhost:3000/admin/users
+Content-Type: application/json
+
+{
+    "luid":9
+}
+
+### deny user
+
+PATCH http://localhost:3000/admin/status
+Content-Type: application/json
+
+{
+    "uid":9,
+    "luid":1
+}
+### statistics
+
+PATCH http://localhost:3000/admin/statistics
+Content-Type: application/json
+
+{
+    
+    "luid":1
+}
